@@ -1,5 +1,8 @@
 # lesscli
-「嘞是CLI」
+> A dead simple library for generating CLI  
+> 「嘞是CLI」
+
+CLI = command line interfaces
 
 ## Install
 For both python2 and python3 : `pip install lesscli`
