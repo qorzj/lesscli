@@ -14,8 +14,8 @@ class MyInstall(install):
 
 setup(
         name = 'lesscli',
-        version='0.0.1',
-        description='Tookit for generating command line interfaces 「嘞是CLI」',
+        version='0.0.2',
+        description='A dead simple library for generating command line interfaces 「嘞是CLI」',
         long_description='\n\nREADME: https://github.com/qorzj/lesscli',
         url='https://github.com/qorzj/lesscli',
         author='qorzj',
