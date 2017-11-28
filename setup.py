@@ -1,4 +1,17 @@
 # coding: utf-8
+"""
+lesscli
+~~~~~~~~
+Lesscli is A dead simple library for generating CLI (command line interfaces).
+Setup
+-----
+.. code-block:: bash
+    > pip install lesscli
+Links
+-----
+* `README <https://github.com/qorzj/lesscli>`_
+"""
+
 from setuptools import setup
 from os import path
 from setuptools.command.install import install
@@ -14,9 +27,9 @@ class MyInstall(install):
 
 setup(
         name = 'lesscli',
-        version='0.0.2',
+        version='0.0.3',
         description='A dead simple library for generating command line interfaces 「嘞是CLI」',
-        long_description='\n\nREADME: https://github.com/qorzj/lesscli',
+        long_description=__doc__,
         url='https://github.com/qorzj/lesscli',
         author='qorzj',
         author_email='inull@qq.com',
