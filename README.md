@@ -4,7 +4,7 @@
 ## Install
 For both python2 and python3 : `pip install lesscli`
 
-## Usage of `lesscli.run()`
+## Usage of `lesscli.run(callback, single='')`
 ```
 $ cat index.py:
     import lesscli
