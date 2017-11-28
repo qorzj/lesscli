@@ -3,7 +3,7 @@
 lesscli
 ~~~~~~~~
 
-Lesscli is A dead simple library for generating CLI (command line interfaces).
+Lesscli is a dead simple library for generating CLI (command line interfaces).
 
 Setup
 -----
@@ -33,7 +33,7 @@ class MyInstall(install):
 
 setup(
         name = 'lesscli',
-        version='0.0.4',
+        version='0.0.5',
         description='A dead simple library for generating command line interfaces 「嘞是CLI」',
         long_description=__doc__,
         url='https://github.com/qorzj/lesscli',
