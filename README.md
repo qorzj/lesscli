@@ -29,6 +29,9 @@ $ python index.py --bob -o c.txt d.txt
 
 $ python index.py -a 1 -c 2 -d -e
     ('1',) {'a': '', 'c': '2', 'd': '', 'e': ''}
+
+$ python index.py --bob='1 2' -c " 3 " ''
+    ('',) {'bob': '1 2', 'c': ' 3 '}
 ```
 
 ## lesscli command: show help information

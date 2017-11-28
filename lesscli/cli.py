@@ -23,6 +23,9 @@ def run(callback, single=''):
 
     $ python index.py -a 1 -c 2 -d -e
         ('1',) {'a': '', 'c': '2', 'd': '', 'e': ''}
+
+    $ python index.py --bob='1 2' -c " 3 " ''
+        ('',) {'bob': '1 2', 'c': ' 3 '}
     """
     a = []
     b = {}
