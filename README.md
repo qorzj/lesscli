@@ -19,16 +19,16 @@ $ python index.py a b
     ('a', 'b') {}
 
 $ python index.py -a 1 -b
-    ('1',) {'a': True, 'b': True}
+    ('1',) {'a': '', 'b': ''}
 
 $ python index.py -a 1 --bob=2 c.txt
-    ('1', 'c.txt') {'a': True, 'bob': '2'}
+    ('1', 'c.txt') {'a': '', 'bob': '2'}
 
 $ python index.py --bob -o c.txt d.txt
-    ('d.txt',) {'bob': True, 'o': 'c.txt'}
+    ('d.txt',) {'bob': '', 'o': 'c.txt'}
 
-$ python index.py -a 1 -c -d -e
-    ('1',) {'a': True, 'c': '-d', 'e': ''}
+$ python index.py -a 1 -c 2 -d -e
+    ('1',) {'a': '', 'c': '2', 'd': '', 'e': ''}
 ```
 
 ## lesscli command: show help information
