@@ -13,16 +13,16 @@ def run(callback, single=''):
         ('a', 'b') {}
 
     $ python index.py -a 1 -b
-        ('1',) {'a': '', 'b': ''}
+        ('1',) {'a': '✓', 'b': '✓'}
 
     $ python index.py -a 1 --bob=2 c.txt
-        ('1', 'c.txt') {'a': '', 'bob': '2'}
+        ('1', 'c.txt') {'a': '✓', 'bob': '2'}
 
     $ python index.py --bob -o c.txt d.txt
-        ('d.txt',) {'bob': '', 'o': 'c.txt'}
+        ('d.txt',) {'bob': '✓', 'o': 'c.txt'}
 
     $ python index.py -a 1 -c 2 -d -e
-        ('1',) {'a': '', 'c': '2', 'd': '', 'e': ''}
+        ('1',) {'a': '✓', 'c': '2', 'd': '✓', 'e': '✓'}
 
     $ python index.py --bob='1 2' -c " 3 " ''
         ('',) {'bob': '1 2', 'c': ' 3 '}
@@ -41,12 +41,12 @@ def run(callback, single=''):
                 key, value = arg.split('=', 1)
                 b[key] = value
             else:
-                b[arg] = ''
+                b[arg] = '✓'
         elif arg.startswith('-'):
             assert len(arg) == 2, arg
             arg = arg[1:]
             if arg in single or i + 1 >= L or arg_list[i + 1].startswith('-'):
-                b[arg] = ''
+                b[arg] = '✓'
             else:
                 b[arg] = arg_list[i + 1]
                 i += 1
