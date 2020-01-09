@@ -43,6 +43,8 @@ class Application:
     # 获取path的下一级列表即帮助文本
     def _sub_help_doc(self, path, app):  # type: (...) -> str
         cmd = sys.argv[0]
+        if '/' in cmd:
+            cmd = cmd.rsplit('/', 1)[-1]
         ret = ''
         if app is None:
             app = self

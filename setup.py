@@ -33,7 +33,7 @@ class MyInstall(install):
 
 setup(
         name = 'lesscli',
-        version='0.0.9',
+        version='0.0.10',
         description='A dead simple library for generating command line interfaces 「嘞是CLI」',
         long_description=__doc__,
         url='https://github.com/qorzj/lesscli',
