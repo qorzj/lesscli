@@ -2,9 +2,8 @@ import sys
 
 
 def doc_text(dealer):  # (...) -> str
-    if not dealer.__doc__:
-        return ''
-    return dealer.__doc__
+    text = getattr(dealer, '__doc__', '')
+    return text.strip() if text and text.strip() else dealer.__name__
 
 
 def show_help(dealer):
