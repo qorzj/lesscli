@@ -107,7 +107,8 @@ class Application:
                     show_help(dealer)
                 else:
                     raise
-            except AssertionError:
+            except AssertionError as e:
+                print(str(e) + '\n')
                 show_help(dealer)
 
 
