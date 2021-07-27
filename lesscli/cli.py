@@ -1,4 +1,6 @@
 import sys
+import optparse
+from .util import eafp
 
 
 def doc_text(dealer):  # (...) -> str
@@ -9,6 +11,31 @@ def doc_text(dealer):  # (...) -> str
 def show_help(dealer):
     print(doc_text(dealer))
     print()
+
+
+def add_option(name, *, short='', type='str', default=None, help=''):
+    opt_args = []
+    if short:
+        assert short[0] == '-' and len(short) == 2
+        opt_args.append(short)
+    assert name and name[0] != '-'
+    opt_args.append('--' + name)
+    opt_kwargs = {}
+    if type == 'bool':
+        opt_kwargs['action'] = 'store_true'
+    elif type != 'str':
+        opt_kwargs['type'] = type
+    if default is not None:
+        opt_kwargs['default'] = default
+    opt_kwargs['help'] = help
+    opt_item = optparse.Option(*opt_args, **opt_kwargs)
+
+    def f(g):
+        if not hasattr(g, '__optparse_options__'):
+            setattr(g, '__optparse_options__', [])
+        getattr(g, '__optparse_options__').append(opt_item)
+        return g
+    return f
 
 
 class Application:
@@ -65,6 +92,16 @@ class Application:
         self.mapping.append((path.strip('/'), dealer_or_app))
         return self
 
+    def run_dealer(self, dealer):
+        usage = eafp(lambda: '\n'.join(doc_text(dealer).strip().splitlines()[1:]), '')
+        parser = optparse.OptionParser(usage=usage)
+        try:
+            parser.add_options(getattr(dealer, '__optparse_options__', []))
+            options, args = parser.parse_args()
+            dealer(*args, **options.__dict__)
+        except AssertionError as e:
+            parser.error(str(e) + '!\n')
+
     def run(self):  # type: ('Application') -> None
         list_params = []
         dict_params = {}
@@ -97,74 +134,18 @@ class Application:
             print(self._sub_help_doc(path, dealer))
             print()
             return
-        if 'h' in dict_params or 'help' in dict_params:
-            show_help(dealer)
         else:
+            usage = eafp(lambda: '\n'.join(doc_text(dealer).strip().splitlines()[1:]), '')
+            parser = optparse.OptionParser(usage=usage)
             try:
-                dealer(*list_params[level:], **dict_params)
-            except TypeError as e:
-                if str(e).startswith(dealer.__name__ + '() '):
-                    show_help(dealer)
-                else:
-                    raise
+                parser.add_options(getattr(dealer, '__optparse_options__', []))
+                options, args = parser.parse_args(args=arg_list[level:])
+                dealer(*args, **options.__dict__)
             except AssertionError as e:
-                print(str(e) + '!\n')
-                show_help(dealer)
-
-
-def run(callback):
-    """
-    $ cat index.py:
-        import lesscli
-        def work(*a, **b):
-            print(a, b)
-        lesscli.run(work, single='ab')
-
-    $ python index.py a b
-        ('a', 'b') {}
-
-    $ python index.py -a 1 -b
-        () {'a': '1', 'b': ''}
-
-    $ python index.py -a 1 --bob=2 c.txt
-        ('c.txt',) {'a': '1', 'bob': '2'}
-
-    $ python index.py --bob -o c.txt d.txt
-        ('d.txt',) {'bob': '', 'o': 'c.txt'}
-
-    $ python index.py -a 1 -c 2 -d -e
-        () {'a': '1', 'c': '2', 'd': '', 'e': ''}
-
-    $ python index.py --bob='1 2' -c " 3 " ''
-        ('',) {'bob': '1 2', 'c': ' 3 '}
-    """
-    a = []
-    b = {}
-    arg_list = sys.argv[1:]
-    L = len(arg_list)
-    i = 0
-    while i < L:
-        arg = arg_list[i]
-        if arg.startswith('--'):
-            assert len(arg) >= 3 and arg[:3] != '---', arg
-            arg = arg[2:]
-            if '=' in arg:
-                key, value = arg.split('=', 1)
-                b[key] = value
-            else:
-                b[arg] = ''
-        elif arg.startswith('-'):
-            assert len(arg) == 2, arg
-            arg = arg[1:]
-            if i + 1 >= L or arg_list[i + 1].startswith('-'):
-                b[arg] = ''
-            else:
-                b[arg] = arg_list[i + 1]
-                i += 1
-        else:
-            a.append(arg)
-        i += 1
-    callback(*a, **b)
+                if str(e):
+                    parser.error(str(e) + '!\n')
+                else:
+                    parser.error('-h or --help for help!')
 
 
 def main():

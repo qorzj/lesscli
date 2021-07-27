@@ -33,7 +33,7 @@ class MyInstall(install):
 
 setup(
         name = 'lesscli',
-        version='0.0.13',
+        version='0.1.0',
         description='A dead simple library for generating command line interfaces 「嘞是CLI」',
         long_description=__doc__,
         url='https://github.com/qorzj/lesscli',
@@ -44,7 +44,7 @@ setup(
 
         classifiers=[
             ],
-        keywords='lesscli cli fire',
+        keywords='lesscli cli fire optparse',
         packages = ['lesscli'],
         install_requires=[],
 
