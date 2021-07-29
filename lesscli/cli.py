@@ -13,14 +13,17 @@ def show_help(dealer):
     print()
 
 
-def add_option(name, *, short='', type='str', default=None, help=''):
-    opt_args = []
+def add_option(name, *, short='', long='', type='str', default=None, help=''):
+    opt_args, opt_kwargs = [], {}
     if short:
         assert short[0] == '-' and len(short) == 2
         opt_args.append(short)
     assert name and name[0] != '-'
-    opt_args.append('--' + name)
-    opt_kwargs = {}
+    opt_kwargs['dest'] = name
+    if long:
+        opt_args.append(long)
+    else:
+        opt_args.append('--' + name)
     if type == 'bool':
         opt_kwargs['action'] = 'store_true'
     elif type != 'str':
@@ -100,7 +103,10 @@ class Application:
             options, args = parser.parse_args()
             dealer(*args, **options.__dict__)
         except AssertionError as e:
-            parser.error(str(e) + '!\n')
+            if str(e):
+                parser.error(str(e) + '!\n')
+            else:
+                parser.error('-h or --help for help!')
 
     def run(self):  # type: ('Application') -> None
         list_params = []
