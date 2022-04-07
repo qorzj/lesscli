@@ -68,7 +68,6 @@ class Application:
             if quit:
                 return cur_path, cur_app, cur_level
 
-
     # 获取path的下一级列表即帮助文本
     def _sub_help_doc(self, path, app):  # type: (...) -> str
         cmd = sys.argv[0]
@@ -146,7 +145,10 @@ class Application:
             try:
                 parser.add_options(getattr(dealer, '__optparse_options__', []))
                 options, args = parser.parse_args(args=arg_list[level:])
-                dealer(*args, **options.__dict__)
+                if args:
+                    dealer(args=args, **options.__dict__)
+                else:
+                    dealer(**options.__dict__)
             except AssertionError as e:
                 if str(e):
                     parser.error(str(e) + '!\n')
