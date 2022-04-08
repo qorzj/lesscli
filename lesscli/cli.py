@@ -33,7 +33,7 @@ def add_subcommand(name, func):
     return f
 
 
-def add_argument(name, *, short='', type=None, default=None, help='', required=True, choices=None, nargs=None):
+def add_argument(name, *, short='', type=None, default=None, help='', required=True, choices=None, nargs=None, dest=''):
     opt_args, opt_kwargs = [], {}
     assert re.match(r'(--)?\w+', name) is not None
     if short:
@@ -53,11 +53,15 @@ def add_argument(name, *, short='', type=None, default=None, help='', required=T
     opt_kwargs['help'] = help
     if required and name.startswith('--'):
         opt_kwargs['required'] = True
+    elif required is False and not name.startswith('--') and not nargs:
+        opt_kwargs['nargs'] = '?'
     if choices is not None:
         assert isinstance(choices, list)
         opt_kwargs['choices'] = choices
     if nargs:  # https://docs.python.org/3/library/argparse.html#nargs
         opt_kwargs['nargs'] = nargs
+    if dest:
+        opt_kwargs['dest'] = dest
     opt_item = opt_args, opt_kwargs
 
     def f(g):
