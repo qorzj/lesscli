@@ -1,6 +1,5 @@
-import sys
-import optparse
-from .util import eafp
+import argparse
+import re
 
 
 def doc_text(dealer):  # (...) -> str
@@ -8,152 +7,96 @@ def doc_text(dealer):  # (...) -> str
     return text.strip() if text and text.strip() else dealer.__name__
 
 
-def show_help(dealer):
-    print(doc_text(dealer))
+def get_summary(func):
+    return doc_text(func).splitlines()[0]
+
+
+def show_help(func):
+    print(doc_text(func))
     print()
 
 
-def add_option(name, *, short='', long='', type='str', default=None, help=''):
-    opt_args, opt_kwargs = [], {}
-    if short:
-        assert short[0] == '-' and len(short) == 2
-        opt_args.append(short)
-    assert name and name[0] != '-'
-    opt_kwargs['dest'] = name
-    if long:
-        opt_args.append(long)
-    else:
-        opt_args.append('--' + name)
-    if type == 'bool':
-        opt_kwargs['action'] = 'store_true'
-    elif type != 'str':
-        opt_kwargs['type'] = type
-    if default is not None:
-        opt_kwargs['default'] = default
-    opt_kwargs['help'] = help
-    opt_item = optparse.Option(*opt_args, **opt_kwargs)
+def add_subcommand(name, func):
+    parser_args = [name]
+    parser_kwargs = {
+        'help': get_summary(func),
+        'description': doc_text(func),
+        'formatter_class': argparse.RawDescriptionHelpFormatter
+    }
+    parser_item = parser_args, parser_kwargs, func
 
     def f(g):
-        if not hasattr(g, '__optparse_options__'):
-            setattr(g, '__optparse_options__', [])
-        getattr(g, '__optparse_options__').append(opt_item)
+        if not hasattr(g, '__argparse_parsers__'):
+            setattr(g, '__argparse_parsers__', [])
+        getattr(g, '__argparse_parsers__').insert(0, parser_item)
         return g
     return f
 
 
-class Application:
-    def __init__(self, doc=''):
-        self.doc = doc
-        self.mapping = []
+def add_argument(name, *, short='', type=None, default=None, help='', required=True, choices=None, nargs=None):
+    opt_args, opt_kwargs = [], {}
+    assert re.match(r'(--)?\w+', name) is not None
+    if short:
+        assert re.match(r'\w', short) is not None
+        if name.startswith('--'):
+            opt_args.append('-' + short)
+        else:
+            opt_kwargs['metavar'] = short
 
-    # 获取最长匹配到path的dealer函数
-    # arg_list是不含减号的argv前缀部分
-    # 返回path, dealer, level
-    def _match_dealer(self, arg_list):
-        cur_app = self
-        cur_level = 0
-        cur_path = ()
-        if not arg_list:
-            return cur_path, cur_app, cur_level
-        while True:
-            quit = True
-            for path, dealer in cur_app.mapping:
-                if arg_list[cur_level] == path:
-                    cur_level += 1
-                    cur_path += (path,)
-                    cur_app = dealer
-                    if isinstance(dealer, Application):
-                        quit = cur_level == len(arg_list)
-                    break
-            if quit:
-                return cur_path, cur_app, cur_level
+    opt_args.append(name)
+    if type == bool:
+        opt_kwargs['action'] = 'store_true'
+    elif type is not None:
+        opt_kwargs['type'] = type
+    if default is not None:
+        opt_kwargs['default'] = default
+    opt_kwargs['help'] = help
+    if required and name.startswith('--'):
+        opt_kwargs['required'] = True
+    if choices is not None:
+        assert isinstance(choices, list)
+        opt_kwargs['choices'] = choices
+    if nargs:  # https://docs.python.org/3/library/argparse.html#nargs
+        opt_kwargs['nargs'] = nargs
+    opt_item = opt_args, opt_kwargs
 
-    # 获取path的下一级列表即帮助文本
-    def _sub_help_doc(self, path, app):  # type: (...) -> str
-        cmd = sys.argv[0]
-        if '/' in cmd:
-            cmd = cmd.rsplit('/', 1)[-1]
-        ret = ''
-        if app is None:
-            app = self
-        if not isinstance(app, Application):
-            raise ValueError('app must be Application')
-        ret += app.doc + '\n'
-        for sub_path, dealer in app.mapping:
-            ret += '  ' + cmd + ' ' + ' '.join(list(path)) + ' ' + sub_path + '\t\t'
-            if isinstance(dealer, Application):
-                ret += dealer.doc.strip().splitlines()[0].strip() + '\n'
-            else:
-                ret += doc_text(dealer).strip().splitlines()[0].strip() + '\n'
-        return ret
+    def f(g):
+        if not hasattr(g, '__argparse_args__'):
+            setattr(g, '__argparse_args__', [])
+        getattr(g, '__argparse_args__').insert(0, opt_item)
+        return g
+    return f
 
-    def add(self,
-            path,  # type: str
-            dealer_or_app):
-        # type: (...) -> 'Application'
-        self.mapping.append((path.strip('/'), dealer_or_app))
-        return self
 
-    def run_dealer(self, dealer):
-        usage = eafp(lambda: '\n'.join(doc_text(dealer).strip().splitlines()[1:]), '')
-        parser = optparse.OptionParser(usage=usage)
+def run(dealer):
+    def bind(parser, func):
+        if hasattr(func, '__argparse_parsers__'):
+            parsers = parser.add_subparsers()
+            for parser_args, parser_kwargs, sub_func in getattr(func, '__argparse_parsers__'):
+                sub_parser = parsers.add_parser(*parser_args, **parser_kwargs)
+                sub_parser.set_defaults(_func=sub_func)
+                bind(sub_parser, sub_func)
+        if hasattr(func, '__argparse_args__'):
+            for opt_args, opt_kwargs in getattr(func, '__argparse_args__'):
+                parser.add_argument(*opt_args, **opt_kwargs)
+        parser.set_defaults(_func=func)
+        parser.set_defaults(_parser=parser)
+
+    root_parser = argparse.ArgumentParser(description=doc_text(dealer), formatter_class=argparse.RawDescriptionHelpFormatter)
+    bind(root_parser, dealer)
+    args = root_parser.parse_args()
+    cur_parser = getattr(args, '_parser')
+    cur_func = getattr(args, '_func')
+    if hasattr(cur_func, '__argparse_args__') or not hasattr(cur_func, '__argparse_parsers__'):
         try:
-            parser.add_options(getattr(dealer, '__optparse_options__', []))
-            options, args = parser.parse_args()
-            dealer(*args, **options.__dict__)
+            cur_func(**{k: v for k, v in args.__dict__.items() if k[0] != '_'})
         except AssertionError as e:
             if str(e):
-                parser.error(str(e) + '!\n')
+                cur_parser.error(str(e) + '!\n')
             else:
-                parser.error('-h or --help for help!')
-
-    def run(self):  # type: ('Application') -> None
-        list_params = []
-        dict_params = {}
-        arg_list = sys.argv[1:]
-        L = len(arg_list)
-        i = 0
-        while i < L:
-            arg = arg_list[i]
-            if arg.startswith('--'):
-                assert len(arg) >= 3 and arg[:3] != '---', arg
-                arg = arg[2:]
-                if '=' in arg:
-                    key, value = arg.split('=', 1)
-                    dict_params[key] = value
-                else:
-                    dict_params[arg] = ''
-            elif arg.startswith('-'):
-                assert len(arg) == 2, arg
-                arg = arg[1:]
-                if i + 1 >= L or arg_list[i + 1].startswith('-'):
-                    dict_params[arg] = ''
-                else:
-                    dict_params[arg] = arg_list[i + 1]
-                    i += 1
-            else:
-                list_params.append(arg)
-            i += 1
-        path, dealer, level = self._match_dealer(arg_list)   # 最长匹配
-        if dealer is None or isinstance(dealer, Application):
-            print(self._sub_help_doc(path, dealer))
-            print()
-            return
-        else:
-            usage = eafp(lambda: '\n'.join(doc_text(dealer).strip().splitlines()[1:]), '')
-            parser = optparse.OptionParser(usage=usage)
-            try:
-                parser.add_options(getattr(dealer, '__optparse_options__', []))
-                options, args = parser.parse_args(args=arg_list[level:])
-                if args:
-                    dealer(args=args, **options.__dict__)
-                else:
-                    dealer(**options.__dict__)
-            except AssertionError as e:
-                if str(e):
-                    parser.error(str(e) + '!\n')
-                else:
-                    parser.error('-h or --help for help!')
+                cur_parser.error('-h or --help for help!')
+    else:
+        cur_parser.print_help()
 
 
 def main():
@@ -165,6 +108,10 @@ def main():
     Documentation of "Writing the Setup Script":
         https://docs.python.org/2/distutils/setupscript.html
         https://docs.python.org/3/distutils/setupscript.html
+        
+    Argparse Tutorial:
+        https://docs.python.org/3/howto/argparse.html
+        https://docs.python.org/3/library/argparse.html
 
     Documentation of lesscli.run:
         >>> import lesscli
