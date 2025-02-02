@@ -33,11 +33,130 @@ def add_subcommand(name, func):
     return f
 
 
+def add_positional_argument(name, *, type=None, default=None, help='', required=True, choices=None, nargs=None, dest=''):
+    """
+    Add a positional argument to a function.
+
+    Parameters
+    ----------
+    name : str
+        The name of the argument. The name must be a valid identifier.
+    type : type, optional
+        The type of the argument.
+    default : object, optional
+        The default value of the argument.
+    help : str, optional
+        The help string for the argument.
+    required : bool, optional
+        True if the argument is required, False if it is optional. If the
+        argument is optional and does not have a default value, the user must
+        provide a value for it.
+    choices : list, optional
+        A list of valid values for the argument.
+    nargs : int or str, optional
+        The number of arguments for the argument.
+        If nargs is '*', the argument is a list of values.
+        refer to https://docs.python.org/3/library/argparse.html#nargs
+    dest : str, optional
+        The name of the attribute to be added to the object returned by
+        parse_args().
+
+    Returns
+    -------
+    f : callable
+        A function that takes one argument, a function, and adds the argument to
+        the function's argparse arguments.
+    """
+    assert re.match(
+        r'\w+', name) is not None, 'Argument name must be a valid identifier'
+    return add_argument(name, type=type, default=default, help=help, required=required, choices=choices, nargs=nargs, dest=dest)
+
+
+def add_option_argument(name, *, short='', type=None, default=None, help='', required=True, choices=None, nargs=None, dest=''):
+    """
+    Add an optional argument to a function.
+
+    Parameters
+    ----------
+    name : str
+        The name of the argument. The name must be a valid identifier.
+    short : str, optional
+        The short name must be one character.
+    type : type, optional
+        The type of the argument. If the type is bool, the argument is a flag.
+    default : object, optional
+        The default value of the argument.
+    help : str, optional
+        The help string for the argument.
+    required : bool, optional
+        True if the argument is required, False if it is optional. If the
+        argument is optional and does not have a default value, the user must
+        provide a value for it.
+    choices : list, optional
+        A list of valid values for the argument.
+    nargs : int or str, optional
+        The number of arguments for the argument.
+        If nargs is '*', the argument is a list of values.
+        refer to https://docs.python.org/3/library/argparse.html#nargs
+    dest : str, optional
+        The name of the attribute to be added to the object returned by
+        parse_args().
+
+    Returns
+    -------
+    f : callable
+        A function that takes one argument, a function, and adds the argument to
+        the function's argparse arguments.
+    """
+    assert re.match(
+        r'\w+', name) is not None, 'Argument name must be a valid identifier'
+    return add_argument(f'--{name}', short=short, type=type, default=default, help=help, required=required, choices=choices, nargs=nargs, dest=dest)
+
+
 def add_argument(name, *, short='', type=None, default=None, help='', required=True, choices=None, nargs=None, dest=''):
+    """
+    Add a positional or optional argument to a function.
+
+    Parameters
+    ----------
+    name : str
+        The name of the argument. If the name starts with '--', the argument is
+        an option; otherwise, it is a positional argument.
+    short : str, optional
+        The short name of the argument, if the name does not start with '--'.
+        The short name must be one character.
+    type : type, optional
+        The type of the argument. If the type is bool, the argument is a flag.
+    default : object, optional
+        The default value of the argument.
+    help : str, optional
+        The help string for the argument.
+    required : bool, optional
+        True if the argument is required, False if it is optional. If the
+        argument is optional and does not have a default value, the user must
+        provide a value for it.
+    choices : list, optional
+        A list of valid values for the argument.
+    nargs : int or str, optional
+        The number of arguments for the argument.
+        If nargs is '*', the argument is a list of values.
+        refer to https://docs.python.org/3/library/argparse.html#nargs
+    dest : str, optional
+        The name of the attribute to be added to the object returned by
+        parse_args().
+
+    Returns
+    -------
+    f : callable
+        A function that takes one argument, a function, and adds the argument to
+        the function's argparse arguments.
+    """
     opt_args, opt_kwargs = [], {}
-    assert re.match(r'(--)?\w+', name) is not None
+    assert re.match(
+        r'(--)?\w+', name) is not None, 'Argument name must be a valid identifier'
     if short:
-        assert re.match(r'\w', short) is not None
+        assert re.match(
+            r'\w', short) is not None, 'Argument short must be one-character'
         if name.startswith('--'):
             opt_args.append('-' + short)
         else:
@@ -53,10 +172,10 @@ def add_argument(name, *, short='', type=None, default=None, help='', required=T
     opt_kwargs['help'] = help
     if required and name.startswith('--'):
         opt_kwargs['required'] = True
-    elif required is False and not name.startswith('--') and not nargs:
+    elif not required and not name.startswith('--') and not nargs:
         opt_kwargs['nargs'] = '?'
     if choices is not None:
-        assert isinstance(choices, list)
+        assert isinstance(choices, list), 'choices must be a list'
         opt_kwargs['choices'] = choices
     if nargs:  # https://docs.python.org/3/library/argparse.html#nargs
         opt_kwargs['nargs'] = nargs
@@ -86,7 +205,8 @@ def run(dealer):
         parser.set_defaults(_func=func)
         parser.set_defaults(_parser=parser)
 
-    root_parser = argparse.ArgumentParser(description=doc_text(dealer), formatter_class=argparse.RawDescriptionHelpFormatter)
+    root_parser = argparse.ArgumentParser(description=doc_text(
+        dealer), formatter_class=argparse.RawDescriptionHelpFormatter)
     bind(root_parser, dealer)
     args = root_parser.parse_args()
     cur_parser = getattr(args, '_parser')
